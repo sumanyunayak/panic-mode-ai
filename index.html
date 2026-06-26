@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PANIC MODE | AI Crisis Assistant</title>
+
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+
+  <meta name="theme-color" content="#ff1a1a">
+
+  <meta property="og:title" content="PANIC MODE">
+  <meta property="og:description" content="AI-powered emergency productivity recovery system for students under pressure.">
+  <meta property="og:image" content="assets/preview.png">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #FF2D2D;
+      --orange: #FF6B00;
+      --amber: #FFB800;
+      --green: #00FF88;
+      --blue: #00CFFF;
+      --bg: #080808;
+      --bg2: #0f0f0f;
+      --bg3: #161616;
+      --border: #1e1e1e;
+      --border2: #2a2a2a;
+      --text: #e8e8e8;
+      --muted: #555;
+      --mono: 'Share Tech Mono', monospace;
+      --sans: 'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* SCANLINE */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px);
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .screen { display: none; min-height: 100vh; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,0.95);
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .topbar-brand { font-family: var(--mono); font-size: 13px; color: var(--red); letter-spacing: 3px; }
+    .topbar-right { display: flex; align-items: center; gap: 32px; }
+    .topbar-status { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+
+    /* FLOW BREADCRUMB */
+    .flow-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-left: 18px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+    .flow-step {
+      padding: 3px 10px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    .flow-step.active { color: var(--red); border-color: var(--red); background: rgba(255,45,45,0.08); }
+    .flow-step.done { color: var(--green); border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.04); }
+    .flow-arrow {color: #777;font-size: 15px;font-weight: bold;padding: 0 6px;line-height: 1;}
+
+    .pulse-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--red); margin-right: 7px;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+
+    /* ════════════════════════════════
+       SCREEN 1 — LANDING
+    ════════════════════════════════ */
+    #screen-landing { align-items: center; justify-content: center; padding: 40px 20px; }
+    .landing-center { width: 100%; max-width: 680px; }
+
+    .er-badge {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: var(--mono); font-size: 10px; letter-spacing: 4px;
+      color: var(--red); text-transform: uppercase; margin-bottom: 20px;
+    }
+    .er-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 1s infinite; }
+
+    .landing-title {
+      font-size: clamp(52px, 9vw, 104px);
+      font-weight: 900; line-height: 0.9; letter-spacing: -4px; margin-bottom: 6px;
+    }
+    .landing-title .panic { color: var(--red); }
+    .landing-title .mode { color: var(--text); }
+    .landing-sub { font-size: 13px; color: var(--muted); margin-bottom: 40px; font-family: var(--mono); letter-spacing: 1px; }
+
+    /* WARNING BADGE */
+    .warning-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border: 1px solid var(--orange);
+      background: rgba(255,107,0,0.06); border-radius: 2px;
+      font-family: var(--mono); font-size: 10px; color: var(--orange);
+      letter-spacing: 2px; margin-bottom: 28px;
+    }
+
+    /* MOOD */
+    .section-label { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+    .mood-row { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .mood-btn {
+      padding: 10px 18px; border: 1px solid var(--border2);
+      background: var(--bg2); color: var(--muted);
+      font-family: var(--mono); font-size: 11px; cursor: pointer;
+      border-radius: 4px; transition: all 0.15s; letter-spacing: 1px;
+    }
+    .mood-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .mood-btn.selected { border-color: var(--red); color: var(--red); background: rgba(255,45,45,0.08); }
+
+    /* INPUT CARD */
+    .input-card {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-top: 2px solid var(--red);
+      border-radius: 0 0 6px 6px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .input-card-header {
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .situation-input {
+      width: 100%; background: transparent; border: none;
+      color: var(--text); font-family: var(--sans); font-size: 15px;
+      line-height: 1.7; padding: 18px 20px; resize: none; outline: none;
+      min-height: 130px;
+    }
+    .situation-input::placeholder { color: var(--muted); }
+    .char-count { padding: 8px 18px; font-family: var(--mono); font-size: 10px; color: var(--muted); text-align: right; border-top: 1px solid var(--border); }
+
+    .input-actions { display: flex; gap: 10px; }
+    .voice-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 18px; border: 1px solid var(--border2);
+      background: var(--bg2); color: var(--muted);
+      font-family: var(--mono); font-size: 11px; cursor: pointer;
+      border-radius: 4px; transition: all 0.2s; letter-spacing: 1px; white-space: nowrap;
+    }
+    .voice-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .voice-btn.recording { border-color: var(--red); color: var(--red); animation: pulse 0.8s infinite; }
+
+    .activate-btn {
+      flex: 1; padding: 14px 24px; background: var(--red); border: none;
+      color: #fff; font-family: var(--mono); font-size: 12px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase; cursor: pointer;
+      border-radius: 4px; transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    .activate-btn::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+    .activate-btn:hover { background: #e01a1a; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,45,45,0.3); }
+    .activate-btn:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ════════════════════════════════
+       LOADING
+    ════════════════════════════════ */
+    .loading-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(8,8,8,0.97); z-index: 1000;
+      align-items: center; justify-content: center; flex-direction: column; gap: 20px;
+    }
+    .loading-overlay.active { display: flex; }
+    .loading-icon { font-size: 40px; animation: spin 2s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-family: var(--mono); font-size: 12px; color: var(--red); letter-spacing: 4px; }
+    .loading-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+    .loading-bar-wrap { width: 280px; height: 2px; background: var(--border2); border-radius: 1px; overflow: hidden; }
+    .loading-bar { height: 100%; background: linear-gradient(90deg, var(--red), var(--orange)); width: 0%; animation: loadbar 2.5s ease-in-out infinite; }
+    @keyframes loadbar { 0%{width:0%} 60%{width:75%} 100%{width:100%} }
+
+    /* ════════════════════════════════
+       SCREEN 2 — ER DIAGNOSIS
+    ════════════════════════════════ */
+    #screen-diagnosis { }
+    .diagnosis-body { flex: 1; display: flex; flex-direction: column; gap: 1px; background: var(--border); }
+    .diag-top { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+    .diag-panel { background: var(--bg); padding: 28px 32px; }
+
+    .panel-label { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+
+    /* SEVERITY CARD */
+    .severity-badge {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 12px 20px; border-radius: 4px; margin-bottom: 16px;
+    }
+    .severity-badge.CRITICAL { background: rgba(255,45,45,0.1); border: 1px solid var(--red); }
+    .severity-badge.HIGH { background: rgba(255,107,0,0.1); border: 1px solid var(--orange); }
+    .severity-badge.MEDIUM { background: rgba(255,184,0,0.1); border: 1px solid var(--amber); }
+    .severity-badge.LOW { background: rgba(0,255,136,0.1); border: 1px solid var(--green); }
+    .severity-text { font-family: var(--mono); font-size: 22px; font-weight: 700; letter-spacing: 3px; }
+    .severity-text.CRITICAL { color: var(--red); }
+    .severity-text.HIGH { color: var(--orange); }
+    .severity-text.MEDIUM { color: var(--amber); }
+    .severity-text.LOW { color: var(--green); }
+
+    .diagnosis-name { font-size: 22px; font-weight: 700; line-height: 1.3; margin-bottom: 10px; }
+    .critical-threat {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 14px; border: 1px solid rgba(255,184,0,0.25);
+      background: rgba(255,184,0,0.04); border-radius: 4px;
+      font-family: var(--mono); font-size: 11px; color: var(--amber); line-height: 1.5;
+    }
+
+    /* PROBABILITY */
+    .prob-big { font-family: var(--mono); font-size: 68px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+    .prob-big.high { color: var(--green); }
+    .prob-big.medium { color: var(--amber); }
+    .prob-big.low { color: var(--red); }
+
+    .prob-bar-wrap { height: 6px; background: var(--border2); border-radius: 3px; margin-bottom: 6px; overflow: hidden; }
+    .prob-bar { height: 100%; border-radius: 3px; transition: width 1.5s cubic-bezier(0.4,0,0.2,1); }
+    .prob-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+
+    /* DO NOT */
+    .do-not-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .do-not-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; background: rgba(255,45,45,0.04);
+      border: 1px solid rgba(255,45,45,0.12); border-radius: 4px;
+      font-family: var(--mono); font-size: 11px; color: #cc4444;
+    }
+    .do-not-x { color: var(--red); font-size: 12px; flex-shrink: 0; }
+
+    /* TIMELINE PANEL */
+    .timeline-panel { background: var(--bg); padding: 28px 32px; }
+    .task-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 14px 0 20px; }
+    .task-card {
+      padding: 18px 20px; border: 1px solid var(--border2);
+      border-radius: 6px; background: var(--bg2);
+      transition: border-color 0.2s; position: relative; overflow: hidden;
+    }
+    .task-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--red), var(--orange));
+    }
+    .task-card:hover { border-color: var(--border2); }
+    .task-card-num { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-bottom: 8px; }
+    .task-card-title { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 10px; }
+    .task-card-meta { display: flex; align-items: center; gap: 8px; }
+    .task-tag {
+      font-family: var(--mono); font-size: 10px;
+      padding: 2px 8px; border-radius: 2px; letter-spacing: 1px;
+    }
+    .task-tag.time { background: rgba(0,207,255,0.08); color: var(--blue); border: 1px solid rgba(0,207,255,0.2); }
+    .task-tag.slot { background: rgba(255,184,0,0.08); color: var(--amber); border: 1px solid rgba(255,184,0,0.2); }
+
+    /* PROGRESS BAR (overall) */
+    .progress-section { margin-bottom: 20px; }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .progress-title { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+    .progress-pct { font-family: var(--mono); font-size: 11px; color: var(--text); }
+    .progress-wrap { height: 6px; background: var(--border2); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--orange)); border-radius: 3px; transition: width 0.5s ease; }
+
+    .recovery-tip {
+      padding: 14px 18px; border-left: 3px solid var(--green);
+      background: rgba(0,255,136,0.04); border-radius: 0 4px 4px 0;
+      font-size: 13px; color: var(--green); font-style: italic; line-height: 1.6; margin-bottom: 20px;
+    }
+
+    .start-mission-btn {
+      width: 100%; padding: 16px; background: transparent;
+      border: 1px solid var(--red); color: var(--red);
+      font-family: var(--mono); font-size: 12px; letter-spacing: 3px;
+      text-transform: uppercase; cursor: pointer; border-radius: 4px;
+      transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    .start-mission-btn:hover { background: var(--red); color: #fff; box-shadow: 0 0 20px rgba(255,45,45,0.25); }
+    .edit-btn{
+    border-color:#444;
+    color:#b0b0b0;
+}
+
+.edit-btn:hover{
+    background:rgba(255,255,255,.05);
+    border-color:#888;
+    color:#fff;
+    box-shadow:0 0 12px rgba(255,255,255,.12);
+}
+    /* ════════════════════════════════
+       SCREEN 3 — FOCUS MODE
+    ════════════════════════════════ */
+    #screen-focus { align-items: center; justify-content: center; padding: 40px 20px; background: var(--bg); }
+    .focus-center { width: 100%; max-width: 580px; text-align: center; }
+
+    /* TASK PROGRESS BAR */
+    .task-progress-bar { margin-bottom: 32px; }
+    .task-progress-steps { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; }
+    .task-pip { width: 28px; height: 4px; border-radius: 2px; background: var(--border2); transition: background 0.3s; }
+    .task-pip.done { background: var(--green); }
+    .task-pip.active { background: var(--red); }
+    .task-progress-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+
+    .focus-task-title { font-size: clamp(24px, 4vw, 42px); font-weight: 700; line-height: 1.2; margin-bottom: 36px; }
+
+    /* GIANT TIMER */
+    .timer-card {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 32px; margin-bottom: 32px;
+      position: relative; overflow: hidden;
+    }
+    .timer-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, rgba(255,45,45,0.04) 0%, transparent 70%);
+    }
+    .giant-timer {
+      font-family: var(--mono); font-size: clamp(72px, 14vw, 140px);
+      font-weight: 700; color: var(--red); line-height: 1;
+      letter-spacing: -2px; transition: color 0.5s;
+    }
+    .giant-timer.warning { color: var(--amber); }
+    .giant-timer.safe { color: var(--green); }
+    .timer-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 3px; margin-top: 8px; }
+
+    /* TIMER PROGRESS */
+    .timer-progress { margin-top: 16px; }
+    .timer-progress-bar { height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+    .timer-progress-fill { height: 100%; background: var(--red); border-radius: 2px; transition: width 1s linear, background 0.5s; }
+
+    .focus-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .focus-btn {
+      padding: 13px 24px; border: 1px solid var(--border2); background: var(--bg2);
+      color: var(--text); font-family: var(--mono); font-size: 11px;
+      letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: all 0.2s;
+    }
+    .focus-btn.done-btn { border-color: var(--green); color: var(--green); }
+    .focus-btn.done-btn:hover { background: var(--green); color: #000; }
+    .focus-btn.help-btn { border-color: var(--amber); color: var(--amber); }
+    .focus-btn.help-btn:hover { background: var(--amber); color: #000; }
+    .focus-btn.checkin-btn { border-color: var(--red); color: var(--red); }
+    .focus-btn.checkin-btn:hover { background: var(--red); color: #fff; }
+
+    /* ════════════════════════════════
+       MODALS
+    ════════════════════════════════ */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88); z-index: 500;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-top: 2px solid var(--red); padding: 28px;
+      width: 100%; max-width: 460px; border-radius: 6px;
+    }
+    .modal-title { font-family: var(--mono); font-size: 11px; letter-spacing: 3px; color: var(--red); text-transform: uppercase; margin-bottom: 6px; }
+    .modal-task { font-size: 17px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+    /* RATING */
+    .rating-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px; }
+    .rating-stars { display: flex; gap: 6px; margin-bottom: 20px; }
+    .star {
+      flex: 1; height: 36px; border: 1px solid var(--border2); background: var(--bg3);
+      color: var(--muted); font-family: var(--mono); font-size: 12px;
+      cursor: pointer; border-radius: 3px; transition: all 0.15s;
+    }
+    .star.active { border-color: var(--amber); color: var(--amber); background: rgba(255,184,0,0.08); }
+
+    .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .modal-btn {
+      flex: 1; min-width: 90px; padding: 12px 8px;
+      border: 1px solid var(--border2); background: transparent; color: var(--text);
+      font-family: var(--mono); font-size: 11px; letter-spacing: 1px;
+      cursor: pointer; border-radius: 4px; transition: all 0.2s; text-align: center;
+    }
+    .modal-btn.yes { border-color: var(--green); color: var(--green); }
+    .modal-btn.yes:hover { background: var(--green); color: #000; }
+    .modal-btn.no { border-color: var(--red); color: var(--red); }
+    .modal-btn.no:hover { background: var(--red); color: #fff; }
+    .modal-btn.help-m { border-color: var(--amber); color: var(--amber); }
+    .modal-btn.help-m:hover { background: var(--amber); color: #000; }
+
+    /* MICRO TASKS */
+    .micro-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+    .micro-item { padding: 12px 16px; border: 1px solid var(--border2); border-radius: 4px; background: var(--bg3); }
+    .micro-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .micro-meta { font-family: var(--mono); font-size: 10px; color: var(--blue); }
+    .micro-tip { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+    /* ════════════════════════════════
+       SCREEN 4 — DEBRIEF
+    ════════════════════════════════ */
+    #screen-debrief { align-items: center; justify-content: center; padding: 40px 20px; }
+    .debrief-center { width: 100%; max-width: 580px; }
+    .debrief-title { font-size: clamp(40px, 7vw, 72px); font-weight: 900; line-height: 0.95; letter-spacing: -2px; margin-bottom: 12px; }
+    .debrief-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 3px; margin-bottom: 32px; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    .stat-box { padding: 20px 16px; border: 1px solid var(--border2); border-radius: 6px; background: var(--bg2); text-align: center; }
+    .stat-num { font-family: var(--mono); font-size: 38px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; }
+
+    /* OVERALL PROGRESS */
+    .session-progress { padding: 16px 20px; border: 1px solid var(--border2); border-radius: 6px; background: var(--bg2); margin-bottom: 16px; }
+    .session-progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+    .session-bar-wrap { height: 8px; background: var(--border2); border-radius: 4px; overflow: hidden; }
+    .session-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green), #00cc6a); transition: width 1s ease; }
+
+    .streak-box {
+      padding: 16px 20px; border: 1px solid rgba(255,184,0,0.3);
+      background: rgba(255,184,0,0.04); border-radius: 6px; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .streak-fire { font-size: 32px; }
+    .streak-text { font-family: var(--mono); font-size: 12px; color: var(--amber); line-height: 1.5; }
+
+    .insight-box { padding: 18px 20px; border: 1px solid var(--border2); background: var(--bg2); border-radius: 6px; margin-bottom: 24px; }
+    .insight-label { font-family: var(--mono); font-size: 9px; letter-spacing: 3px; color: var(--blue); margin-bottom: 8px; }
+    .insight-text { font-size: 13px; line-height: 1.6; color: var(--text); }
+
+    .debrief-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .debrief-btn{
+      font-family: 'Share Tech Mono', monospace;
+      flex:1;
+      height: 52px;
+      background:transparent;
+      border:1px solid var(--border);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:all .25s ease;
+      font-size:12px;
+      letter-spacing:2px;
+      text-transform:uppercase;
+      border: 1px solid;
+      border-radius: 6px;
+    }
+    .debrief-btn:hover{
+      transform: translateY(-2px);
+      transition: all .25s ease;
+    }
+    .debrief-btn:first-child:hover{
+      border-color: #33d1ff;
+      color: #33d1ff;
+      box-shadow:
+          0 0 8px rgba(51,209,255,.35),
+          0 0 20px rgba(51,209,255,.15);
+    }
+    .debrief-btn.recovery { border-color: var(--red); color: var(--red); }
+    .debrief-btn.recovery:hover { background: var(--red); color: #fff; }
+    .debrief-btn.new-session { border-color: var(--green); color: var(--green); }
+    .debrief-btn.new-session:hover { background: var(--green); color: #000; }
+
+    .review-btn{
+    border-color:#3fc9ff;
+    color:#3fc9ff;
+}
+
+.review-btn:hover{
+    border-color:#6ddfff;
+    color:#6ddfff;
+    box-shadow:0 0 12px rgba(63,201,255,.3);
+
+    box-shadow:
+        0 0 8px rgba(255,255,255,.18);
+
+    transform:translateY(-2px);
+}
+
+    /* RECOVERY MODAL */
+    .recovery-steps { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+    .recovery-step { padding: 14px 16px; border: 1px solid var(--border2); border-radius: 4px; background: var(--bg3); }
+    .step-num { font-family: var(--mono); font-size: 9px; color: var(--red); letter-spacing: 2px; margin-bottom: 4px; }
+    .step-action { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .step-template { font-size: 11px; color: var(--muted); font-style: italic; line-height: 1.5; }
+    .rep-recovery { text-align: center; padding: 14px; border: 1px solid rgba(0,255,136,0.3); border-radius: 4px; background: rgba(0,255,136,0.04); margin-bottom: 14px; }
+    .rep-num { font-family: var(--mono); font-size: 40px; color: var(--green); font-weight: 700; }
+    .rep-label { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; }
+    .harsh-truth { padding: 12px 16px; border-left: 3px solid var(--red); background: rgba(255,45,45,0.04); font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+    .silver-lining { padding: 12px 16px; border-left: 3px solid var(--green); background: rgba(0,255,136,0.04); font-size: 12px; color: var(--green); line-height: 1.5; }
+
+    .modal-scroll { max-height: 58vh; overflow-y: auto; padding-right: 4px; }
+    .modal-scroll::-webkit-scrollbar { width: 3px; }
+    .modal-scroll::-webkit-scrollbar-thumb { background: var(--border2); }
+    .modal-close {
+      margin-top: 14px; width: 100%; padding: 11px;
+      border: 1px solid var(--border2); background: transparent; color: var(--muted);
+      font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+      cursor: pointer; border-radius: 4px; transition: all 0.2s;
+    }
+    .modal-close:hover { border-color: var(--text); color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .flow-bar { display: none; }
+}
+@media (max-width: 620px) {
+  .topbar { padding: 10px 14px; }
+  .topbar-brand { font-size: 11px; letter-spacing: 2px; }
+  #screen-landing { padding: 20px 16px; }
+  .landing-title { font-size: clamp(48px, 15vw, 68px); letter-spacing: -2px; }
+  .landing-sub { font-size: 11px; margin-bottom: 20px; }
+  .warning-badge { font-size: 9px; padding: 7px 12px; line-height: 1.5; white-space: normal; text-align: center; justify-content: center; margin-bottom: 20px; }
+  .mood-row { gap: 6px; margin-bottom: 18px; }
+  .mood-btn { padding: 8px 11px; font-size: 11px; flex: 1 1 calc(50% - 6px); text-align: center; }
+  .situation-input { font-size: 14px; padding: 14px 16px; min-height: 110px; }
+  .voice-btn { padding: 11px 14px; font-size: 10px; }
+  .activate-btn { font-size: 11px; letter-spacing: 2px; padding: 12px 14px; }
+  .diag-top { grid-template-columns: 1fr; }
+  .diag-panel { padding: 16px; }
+  .timeline-panel { padding: 16px; }
+  .severity-text { font-size: 17px; }
+  .diagnosis-name { font-size: 17px; }
+  .prob-big { font-size: 44px; }
+  .task-cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .task-card { padding: 10px 12px; }
+  .start-mission-btn { font-size: 11px; padding: 13px; }
+  .timer-card { padding: 18px 14px; margin-bottom: 20px; }
+  .giant-timer { font-size: clamp(56px, 16vw, 88px); }
+  #screen-debrief { padding: 20px 16px; }
+  .debrief-title { font-size: clamp(34px, 10vw, 48px); }
+  .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-box { padding: 12px 8px; }
+  .stat-num { font-size: 26px; }
+  .stat-label { font-size: 7px; }
+  .debrief-actions { flex-direction: column; gap: 8px; }
+  .debrief-btn { min-width: unset; padding: 13px; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal-box { padding: 20px 16px 24px; border-radius: 12px 12px 0 0; max-height: 85vh; overflow-y: auto; width: 100%; max-width: 100%; }
+  .modal-actions { flex-direction: column; gap: 8px; }
+  .modal-scroll { max-height: 45vh; }
+  .modal-close { margin-top: 12px; position: sticky; bottom: 0; background: var(--bg2); }
+}
+@media (max-width: 400px) {
+  .mood-btn { flex: 1 1 calc(50% - 5px); font-size: 10px; padding: 7px 8px; }
+  .input-actions { flex-direction: column; }
+  .voice-btn { width: 100%; justify-content: center; }
+  .task-cards { grid-template-columns: 1fr; }
+  .focus-actions { flex-direction: column; }
+  .focus-btn { width: 100%; text-align: center; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .stats-row .stat-box:last-child { grid-column: 1 / -1; }
+  .giant-timer { font-size: clamp(52px, 18vw, 72px); }
+}
+@media (max-width: 320px) {
+  .landing-title { font-size: 44px; }
+  .prob-big { font-size: 38px; }
+  .giant-timer { font-size: 52px; }
+  .mood-btn { font-size: 9px; padding: 6px 8px; }
+}
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-icon">🚨</div>
+  <div class="loading-text">TRIAGING YOUR SITUATION</div>
+  <div class="loading-sub">AI EMERGENCY ROOM PROCESSING...</div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+</div>
+
+<!-- CHECK-IN MODAL -->
+<div class="modal-overlay" id="checkin-modal">
+  <div class="modal-box">
+    <div class="modal-title">⏱ 20-MIN CHECK-IN</div>
+    <div class="modal-task" id="checkin-task-name">Task name</div>
+    <div class="rating-label">CURRENT FOCUS</div>
+    <div class="silver-lining" id="focus-meaning" style="margin-bottom:12px;">
+      😐 Holding steady — current plan stays stable.
+    </div>
+    <div class="rating-stars" id="rating-stars">
+      <button class="star" data-val="1">1</button>
+      <button class="star" data-val="2">2</button>
+      <button class="star" data-val="3">3</button>
+      <button class="star" data-val="4">4</button>
+      <button class="star" data-val="5">5</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn yes" onclick="handleCheckin(true)">✓ DONE</button>
+      <button type="button" class="modal-btn no" onclick="handleCheckin(false)">✕ NOT DONE</button>
+      <button type="button" class="modal-btn help-m" onclick="handleNeedHelp()">⚡ NEED HELP</button>
+    </div>
+  </div>
+</div>
+
+<!-- MICRO-TASK MODAL -->
+<div class="modal-overlay" id="micro-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚡ MICRO-TASK BREAKDOWN</div>
+    <div class="modal-scroll"><ul class="micro-list" id="micro-list"></ul></div>
+    <button type="button" class="modal-close" onclick="closeMicro()">CONTINUE WITH MICRO-TASKS →</button>
+  </div>
+</div>
+
+<!-- RECOVERY MODAL -->
+<div class="modal-overlay" id="recovery-modal">
+  <div class="modal-box">
+    <div class="modal-title">🚨 DAMAGE CONTROL PLAN</div>
+    <div class="modal-scroll" id="recovery-content"></div>
+    <button type="button" class="modal-close" onclick="document.getElementById('recovery-modal').classList.remove('active')">CLOSE</button>
+  </div>
+</div>
+
+<!-- DAMAGE INPUT MODAL -->
+<div class="modal-overlay" id="damage-input-modal">
+  <div class="modal-box">
+    <div class="modal-title">🚨 DAMAGE CONTROL</div>
+    <div class="modal-task">What deadline did you miss?</div>
+
+    <textarea
+      id="damage-input"
+      class="situation-input"
+      style="min-height:90px;border:1px solid var(--border2);background:var(--bg3);border-radius:4px;"
+      placeholder="e.g. Assignment submission, project deadline..."
+    ></textarea>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button type="button" class="modal-btn no" onclick="closeDamageInput()">CANCEL</button>
+      <button type="button" class="modal-btn yes" onclick="submitDamageInput()">GENERATE PLAN</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP MESSAGE MODAL -->
+<div class="modal-overlay" id="app-message-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="app-message-title">MESSAGE</div>
+    <div class="silver-lining" id="app-message-text"></div>
+    <button type="button" class="modal-close" onclick="closeAppMessage()">OK</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 — LANDING
+══════════════════════════════════════ -->
+<div class="screen active" id="screen-landing">
+  <div class="topbar">
+    <div class="topbar-brand">⬡ PANIC MODE</div>
+    <div class="topbar-right">
+      <div class="flow-bar">
+        <div class="flow-step active" id="flow-1">INPUT</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step" id="flow-2">DIAGNOSIS</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step" id="flow-3">TRIAGE</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step" id="flow-4">FOCUS</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step" id="flow-5">CHECK-IN</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step" id="flow-6">DEBRIEF</div>
+      </div>
+      <div class="topbar-status"><span class="pulse-dot"></span>ER ONLINE</div>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;">
+    <div class="landing-center">
+      <div class="er-badge"><div class="er-badge-dot"></div>DIGITAL EMERGENCY ROOM</div>
+      <div class="landing-title"><div class="panic">PANIC</div><div class="mode">MODE.</div></div>
+      <div class="landing-sub">// Crisis response system for your day. Not a to-do app.</div>
+
+      <div class="warning-badge">⚠ FOR WHEN NORMAL PRODUCTIVITY TOOLS HAVE FAILED YOU</div>
+
+      <div class="section-label">Current State — How are you feeling?</div>
+      <div class="mood-row" id="mood-row">
+        <button type="button" class="mood-btn" data-mood="exhausted">😴 Exhausted</button>
+        <button type="button" class="mood-btn" data-mood="panicking">😤 Panicking</button>
+        <button type="button" class="mood-btn" data-mood="stressed">😰 Stressed</button>
+        <button type="button" class="mood-btn" data-mood="ready">⚡ Ready to Fight</button>
+      </div>
+
+      <div class="section-label">Describe Your Emergency</div>
+      <div class="input-card">
+        <div class="input-card-header">
+          <span class="pulse-dot"></span> SITUATION REPORT
+        </div>
+        <textarea class="situation-input" id="situation-input"
+          placeholder="e.g. I have a client presentation in 2 hours, I've done nothing, and I also have 3 unread emails I'm scared to open..."
+          oninput="updateCharCount(this)"></textarea>
+        <div class="char-count" id="char-count">0 / 500</div>
+      </div>
+
+      <div class="input-actions">
+        <button type="button" class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎤 SPEAK</button>
+        <button type="button" class="activate-btn" id="activate-btn" onclick="activatePanicMode()">
+          🚨 ACTIVATE PANIC MODE
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 — ER DIAGNOSIS
+══════════════════════════════════════ -->
+<div class="screen" id="screen-diagnosis">
+  <div class="topbar">
+    <div class="topbar-brand">⬡ PANIC MODE</div>
+    <div class="topbar-right">
+      <div class="flow-bar">
+        <div class="flow-step done">INPUT</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step active">DIAGNOSIS</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step">TRIAGE</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step">FOCUS</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step">CHECK-IN</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step">DEBRIEF</div>
+      </div>
+      <div class="topbar-status"><span class="pulse-dot"></span>DIAGNOSIS COMPLETE</div>
+    </div>
+  </div>
+
+  <div class="diagnosis-body">
+    <div class="diag-top">
+
+      <!-- LEFT: SEVERITY + DIAGNOSIS -->
+      <div class="diag-panel">
+        <div class="panel-label">ER Diagnosis</div>
+        <div class="severity-badge CRITICAL" id="severity-badge">
+          <span class="pulse-dot"></span>
+          <span class="severity-text CRITICAL" id="diag-severity">CRITICAL</span>
+        </div>
+        <div class="diagnosis-name" id="diag-name">Presentation Crisis</div>
+
+        <div class="critical-threat" style="margin-bottom:10px;">
+          🚨 &nbsp;<span id="crisis-type">Crisis type loading...</span>
+        </div>
+
+        <div class="critical-threat">⚠ &nbsp;<span id="diag-threat">Critical threat loading...</span></div>
+      </div>
+
+      <!-- RIGHT: SUCCESS PROBABILITY + DO NOT -->
+      <div class="diag-panel">
+        <div class="panel-label">Success Probability</div>
+        <div class="prob-big low" id="diag-prob">46%</div>
+        <div class="prob-bar-wrap"><div class="prob-bar" id="diag-prob-bar" style="width:46%"></div></div>
+        <div class="prob-label" id="prob-label">LOW CHANCE — IMMEDIATE ACTION REQUIRED</div>
+        <div style="margin-top:14px;">
+          <div class="panel-label">WHY THIS PROBABILITY?</div>
+          <div class="do-not-grid" id="probability-reason"></div>
+        </div>
+        <div style="margin-top:20px;">
+          <div class="panel-label">DO NOT ❌ — Avoid These Now</div>
+          <div class="do-not-grid" id="do-not-list"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RESCUE TIMELINE -->
+    <div class="timeline-panel">
+      <div class="panel-label">Rescue Timeline — Triage Plan</div>
+
+      <div class="progress-section">
+        <div class="progress-header">
+          <span class="progress-title">MISSION PROGRESS</span>
+          <span class="progress-pct" id="mission-pct">0%</span>
+        </div>
+        <div class="progress-wrap"><div class="progress-fill" id="mission-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="task-cards" id="task-cards"></div>
+      <div class="recovery-tip" id="recovery-tip"></div>
+
+      <button type="button" class="start-mission-btn edit-btn" onclick="editSituation()" style="margin-bottom:10px;border-color:var(--border2);color:var(--muted);">
+        ← EDIT SITUATION
+      </button>
+      <button type="button" id="start-focus-btn" class="start-mission-btn" onclick="startFocusMode()">
+        ⚡ ENTER FOCUS MODE — BEGIN RESCUE MISSION →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 — FOCUS MODE
+══════════════════════════════════════ -->
+<div class="screen" id="screen-focus">
+  <div class="topbar">
+    <div class="topbar-brand">⬡ PANIC MODE</div>
+    <div class="topbar-right">
+      <div class="flow-bar">
+        <div class="flow-step done">INPUT</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step done">DIAGNOSIS</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step done">TRIAGE</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step active">FOCUS</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step">CHECK-IN</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step">DEBRIEF</div>
+      </div>
+      <div class="topbar-status"><span class="pulse-dot"></span>FOCUS MODE</div>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;">
+    <div class="focus-center">
+
+      <!-- TASK PROGRESS PIPS -->
+      <div class="task-progress-bar">
+        <div class="task-progress-steps" id="task-pips"></div>
+        <div class="task-progress-label" id="focus-task-num">TASK 1 OF 4</div>
+      </div>
+
+      <div class="focus-task-title" id="focus-task-title">Current Task</div>
+
+      <!-- TIMER CARD -->
+      <div class="timer-card">
+        <div class="giant-timer" id="giant-timer">00:00</div>
+        <div class="timer-label">TIME REMAINING FOR THIS TASK</div>
+        <div class="timer-progress">
+          <div class="timer-progress-bar">
+            <div class="timer-progress-fill" id="timer-progress-fill" style="width:100%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="focus-actions">
+  <button type="button" class="focus-btn" onclick="showScreen('screen-diagnosis')">← VIEW PLAN</button>
+  <button type="button" class="focus-btn done-btn" onclick="markDone()">✓ TASK DONE</button>
+  <button type="button" class="focus-btn help-btn" onclick="needHelp()">⚡ NEED HELP</button>
+</div>
+
+<!-- DEMO HINT — visible to judges -->
+<div style="margin-top: 20px; padding: 12px 16px; border: 1px dashed #333; border-radius: 4px; text-align: center;">
+  <div style="font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-bottom: 8px;">
+  💡 EVERY 20 MINS, AI ASKS IF YOU'RE ON TRACK & REPLANS IF NEEDED:
+</div>
+<button type="button" class="focus-btn checkin-btn" onclick="showCheckin()" style="width:100%; font-size:10px;">
+  👁 SEE HOW AI CHECK-IN WORKS →
+</button>
+</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 4 — DEBRIEF
+══════════════════════════════════════ -->
+<div class="screen" id="screen-debrief">
+  <div class="topbar">
+    <div class="topbar-brand">⬡ PANIC MODE</div>
+    <div class="topbar-right">
+      <div class="flow-bar">
+        <div class="flow-step done">INPUT</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step done">DIAGNOSIS</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step done">TRIAGE</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step done">FOCUS</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step done">CHECK-IN</div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-step active">DEBRIEF</div>
+      </div>
+      <div class="topbar-status">SESSION COMPLETE</div>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;">
+    <div class="debrief-center">
+      <div class="debrief-title" id="debrief-title">Mission<br/>Complete.</div>
+      <div class="debrief-sub">// SESSION DEBRIEF REPORT</div>
+
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-num" id="stat-done" style="color:var(--green)">0</div>
+          <div class="stat-label">COMPLETED</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-missed" style="color:var(--red)">0</div>
+          <div class="stat-label">MISSED</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-prob" style="color:var(--amber)">0%</div>
+          <div class="stat-label">FINAL PROB.</div>
+        </div>
+      </div>
+
+      <!-- SESSION PROGRESS BAR -->
+      <div class="session-progress">
+        <div class="session-progress-header">
+          <span>TASKS COMPLETED</span>
+          <span id="session-pct-label">0 / 0</span>
+        </div>
+        <div class="session-bar-wrap">
+          <div class="session-bar" id="session-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="streak-box">
+        <div class="streak-fire">🔥</div>
+        <div class="streak-text" id="streak-text">Loading streak...</div>
+      </div>
+
+      <div class="insight-box">
+        <div class="insight-label">AI BEHAVIORAL INSIGHT</div>
+        <div class="insight-text" id="debrief-insight">Analyzing your session...</div>
+      </div>
+
+      <div class="debrief-actions">
+        <button type="button" class="debrief-btn" onclick="reviewCompletedPlan()">◀ REVIEW PLAN</button>
+        <button type="button" class="debrief-btn recovery" onclick="showRecovery()">🚨 RECOVER DEADLINE</button>
+        <button type="button" class="debrief-btn new-session" onclick="newSession()">⚡ NEW MISSION</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+  // Prevent any accidental form submissions
+  document.addEventListener('submit', e => e.preventDefault());
+  const API = 'http://127.0.0.1:8000/api';
+
+const MOCK_MODE = false;
+let loadingMessageInterval = null;
+
+const diagnosisMessages = [
+  "🧠 ANALYZING CRISIS...",
+  "📋 TRIAGING TASKS...",
+  "⚡ CALCULATING SUCCESS PROBABILITY...",
+  "🚑 BUILDING RESCUE PLAN..."
+];
+
+const recoveryMessages = [
+  "🚨 ASSESSING DAMAGE...",
+  "📩 DRAFTING RECOVERY STEPS...",
+  "⚡ CALCULATING REPUTATION RECOVERY...",
+  "🛠 BUILDING DAMAGE CONTROL PLAN..."
+];
+
+function startLoadingMessages(messages) {
+  const textEl = document.querySelector(".loading-text");
+  const subEl = document.querySelector(".loading-sub");
+
+  let index = 0;
+  textEl.textContent = messages[index];
+  subEl.textContent = "AI EMERGENCY ROOM PROCESSING...";
+
+  clearInterval(loadingMessageInterval);
+
+  loadingMessageInterval = setInterval(() => {
+    index = (index + 1) % messages.length;
+    textEl.textContent = messages[index];
+  }, 1200);
+}
+
+function stopLoadingMessages() {
+  clearInterval(loadingMessageInterval);
+  loadingMessageInterval = null;
+}
+window.addEventListener("submit", function(e) {
+  e.preventDefault();
+  console.log("FORM SUBMIT BLOCKED");
+});
+
+// window.addEventListener("beforeunload", function(e) {
+//   console.trace("PAGE IS TRYING TO RELOAD");
+// });
+
+function generateMockTriage(situation, mood) {
+  const s = situation.toLowerCase();
+
+  // Detect severity based on keywords
+  let severity, probability, diagnosis, threat;
+
+  if (s.includes('exam') || s.includes('presentation') || s.includes('interview') && s.includes('hour')) {
+    severity = 'CRITICAL';
+    probability = Math.floor(Math.random() * 20) + 25; // 25-45%
+    diagnosis = s.includes('exam') ? 'Academic Emergency' : s.includes('interview') ? 'Career Crisis' : 'Presentation Crisis';
+    threat = s.includes('exam') ? 'Insufficient preparation time remaining' : 'High-stakes event with zero preparation';
+  } else if (s.includes('deadline') || s.includes('submission') || s.includes('due') || s.includes('client')) {
+    severity = 'HIGH';
+    probability = Math.floor(Math.random() * 20) + 45; // 45-65%
+    diagnosis = s.includes('client') ? 'Client Delivery Crisis' : 'Deadline Pressure';
+    threat = 'Incomplete deliverable with approaching deadline';
+  } else if (s.includes('tomorrow') || s.includes('tonight') || s.includes('meeting')) {
+    severity = 'MEDIUM';
+    probability = Math.floor(Math.random() * 20) + 55; // 55-75%
+    diagnosis = s.includes('meeting') ? 'Meeting Preparedness Gap' : 'Upcoming Commitment Risk';
+    threat = 'Insufficient preparation for tomorrow\'s commitment';
+  } else if (mood === 'exhausted' || s.includes('tired') || s.includes('sleep') || s.includes('impossible')) {
+    severity = 'HIGH';
+    probability = Math.floor(Math.random() * 15) + 30; // 30-45%
+    diagnosis = 'Burnout Crisis';
+    threat = 'Physical and mental exhaustion reducing performance capacity';
+  } else {
+    severity = 'MEDIUM';
+    probability = Math.floor(Math.random() * 20) + 50; // 50-70%
+    diagnosis = 'General Productivity Crisis';
+    threat = 'Overwhelm reducing decision-making ability';
+  }
+
+  // Adjust probability based on mood
+  if (mood === 'exhausted') probability = Math.max(20, probability - 15);
+  if (mood === 'panicking') probability = Math.max(20, probability - 10);
+  if (mood === 'ready') probability = Math.min(90, probability + 15);
+  if (mood === 'stressed') probability = Math.max(20, probability - 5);
+
+  // Generate tasks based on situation
+  let tasks = [];
+  const timeAvailable =
+    s.includes('1 hour') || s.includes('one hour') || s.includes('an hour') ? 55
+    : s.includes('2 hour') || s.includes('two hour') ? 110
+    : s.includes('3 hour') || s.includes('three hour') ? 170
+    : s.includes('4 hour') || s.includes('four hour') ? 230
+    : s.includes('30 min') || s.includes('thirty min') ? 25
+    : s.includes('tonight') || s.includes('tomorrow') ? 180
+    : 120; // default raised to 120 mins
+
+  if (s.includes('exam') || s.includes('study')) {
+    tasks = [
+      { title: 'Identify highest-weight topics from syllabus', duration_minutes: Math.round(timeAvailable * 0.1), start_time: 'Now', order: 1 },
+      { title: 'Speed-read and highlight key concepts', duration_minutes: Math.round(timeAvailable * 0.35), start_time: `${Math.round(timeAvailable * 0.1)} mins in`, order: 2 },
+      { title: 'Write quick summary notes per topic', duration_minutes: Math.round(timeAvailable * 0.3), start_time: `${Math.round(timeAvailable * 0.45)} mins in`, order: 3 },
+      { title: 'Practice 5 likely questions out loud', duration_minutes: Math.round(timeAvailable * 0.2), start_time: `${Math.round(timeAvailable * 0.75)} mins in`, order: 4 },
+    ];
+  } else if (s.includes('presentation') || s.includes('slides')) {
+    tasks = [
+      { title: 'Brain dump all key points on paper', duration_minutes: Math.round(timeAvailable * 0.12), start_time: 'Now', order: 1 },
+      { title: 'Build 5 core slides — no design, just content', duration_minutes: Math.round(timeAvailable * 0.4), start_time: `${Math.round(timeAvailable * 0.12)} mins in`, order: 2 },
+      { title: 'Add minimal visuals and clean up text', duration_minutes: Math.round(timeAvailable * 0.25), start_time: `${Math.round(timeAvailable * 0.52)} mins in`, order: 3 },
+      { title: 'Rehearse out loud from start to finish', duration_minutes: Math.round(timeAvailable * 0.2), start_time: `${Math.round(timeAvailable * 0.77)} mins in`, order: 4 },
+    ];
+  } else if (s.includes('interview')) {
+    tasks = [
+      { title: 'Research company — 3 key facts only', duration_minutes: Math.round(timeAvailable * 0.15), start_time: 'Now', order: 1 },
+      { title: 'Prepare answers for top 5 common questions', duration_minutes: Math.round(timeAvailable * 0.35), start_time: `${Math.round(timeAvailable * 0.15)} mins in`, order: 2 },
+      { title: 'Revise your own resume and key projects', duration_minutes: Math.round(timeAvailable * 0.25), start_time: `${Math.round(timeAvailable * 0.5)} mins in`, order: 3 },
+      { title: 'Mock interview — answer out loud for 15 mins', duration_minutes: Math.round(timeAvailable * 0.2), start_time: `${Math.round(timeAvailable * 0.75)} mins in`, order: 4 },
+    ];
+  } else {
+    tasks = [
+      { title: 'List every pending task in one place', duration_minutes: Math.round(timeAvailable * 0.1), start_time: 'Now', order: 1 },
+      { title: 'Pick the single most critical task and start', duration_minutes: Math.round(timeAvailable * 0.4), start_time: `${Math.round(timeAvailable * 0.1)} mins in`, order: 2 },
+      { title: 'Complete second priority task', duration_minutes: Math.round(timeAvailable * 0.3), start_time: `${Math.round(timeAvailable * 0.5)} mins in`, order: 3 },
+      { title: 'Review, wrap up and send any updates', duration_minutes: Math.round(timeAvailable * 0.15), start_time: `${Math.round(timeAvailable * 0.8)} mins in`, order: 4 },
+    ];
+  }
+
+  const doNotLists = {
+    CRITICAL: ['Check Instagram or any social media', 'Reply to non-urgent messages', 'Redesign or reformat anything', 'Watch tutorials or YouTube'],
+    HIGH: ['Open unrelated browser tabs', 'Start any new tasks', 'Have long phone conversations', 'Perfectionism — done beats perfect'],
+    MEDIUM: ['Multitask between different projects', 'Check emails every 5 minutes', 'Overthink your approach', 'Skip breaks entirely'],
+  };
+
+  return {
+    session_id: 1,
+    diagnosis,
+    severity,
+    success_probability: probability,
+    critical_threat: threat,
+    do_not_list: doNotLists[severity] || doNotLists.MEDIUM,
+    tasks,
+    recovery_tip: severity === 'CRITICAL'
+      ? 'Done is better than perfect. One focused hour now beats ten distracted ones.'
+      : severity === 'HIGH'
+      ? 'Break it down, lock in, and take it one task at a time. You can do this.'
+      : 'Steady focus beats frantic rushing. Trust your plan and execute.'
+  };
+}
+
+  let state = {
+    mood: '',
+    situation: '',
+    sessionId: null,
+    tasks: [],
+    currentTaskIndex: 0,
+    timerInterval: null,
+    checkinInterval: null,
+    secondsLeft: 0,
+    totalSeconds: 0,
+    focusRating: 3,
+    completedCount: 0,
+    missedCount: 0,
+    successProbability: 0,
+    streak: parseInt(sessionStorage.getItem('panicStreak') || '0'),
+    reviewMode: false,
+  };
+
+  // ── SCREEN NAV ──
+  function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  localStorage.setItem('panic_current_screen', id);
+  window.scrollTo(0, 0);
+}
+
+  // ── CHAR COUNT ──
+  function updateCharCount(el) {
+    document.getElementById('char-count').textContent = `${el.value.length} / 500`;
+  }
+
+  // ── MOOD ──
+  document.querySelectorAll('.mood-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.mood = btn.dataset.mood;
+    });
+  });
+
+  // ── VOICE ──
+  let recognition = null;
+  function toggleVoice() {
+    const btn = document.getElementById('voice-btn');
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      showAppMessage('Voice Not Supported', 'Voice not supported. Try Chrome!'); return;
+    }
+    if (recognition) {
+      recognition.stop(); recognition = null;
+      btn.classList.remove('recording'); btn.textContent = '🎤 SPEAK'; return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.continuous = true; recognition.interimResults = true;
+    recognition.onresult = e => {
+      let t = '';
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      const el = document.getElementById('situation-input');
+      el.value = t; updateCharCount(el);
+    };
+    recognition.onend = () => { btn.classList.remove('recording'); btn.textContent = '🎤 SPEAK'; recognition = null; };
+    recognition.start();
+    btn.classList.add('recording'); btn.textContent = '⏹ STOP';
+  }
+
+  // ── ACTIVATE ──
+  async function activatePanicMode() {
+    const situation = document.getElementById('situation-input').value.trim();
+    if (!situation) { showAppMessage('Missing Situation', 'Describe your situation first!'); return; }
+    if (!state.mood) { showAppMessage('Missing Mood', 'Select your current mood!'); return; }
+    state.situation = situation;
+    localStorage.setItem("panic_situation", situation);
+    document.getElementById('loading').classList.add('active');
+    startLoadingMessages(diagnosisMessages);
+    document.getElementById('activate-btn').disabled = true;
+
+    if (MOCK_MODE) {
+      await new Promise(r => setTimeout(r, 2500));
+      const data = generateMockTriage(situation, state.mood);
+      state.sessionId = data.session_id;
+      state.tasks = data.tasks;
+      state.successProbability = data.success_probability;
+
+      try {
+        renderDiagnosis(data);
+        localStorage.setItem('panic_last_data', JSON.stringify(data));
+        localStorage.setItem("panic_situation", situation);
+        document.getElementById('loading').classList.remove('active');
+        stopLoadingMessages();
+        showScreen('screen-diagnosis');
+      } catch (renderErr) {
+        console.error('RENDER ERROR:', renderErr);
+        document.getElementById('loading').classList.remove('active');
+        stopLoadingMessages();
+        document.getElementById('activate-btn').disabled = false;
+        showAppMessage('Render Error', 'Render error: ' + renderErr.message);
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/triage/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ situation, mood: state.mood })
+      });
+      const data = await res.json();
+      console.log('TRIAGE RESPONSE:', data);
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Backend error');
+      }
+      if (!data.tasks || !Array.isArray(data.tasks)) {
+        throw new Error('Invalid tasks received from AI');
+      }
+
+      state.sessionId = data.session_id;
+      state.tasks = data.tasks;
+      state.successProbability = data.success_probability;
+
+      try {
+        renderDiagnosis(data);
+        localStorage.setItem('panic_last_data', JSON.stringify(data));
+        localStorage.setItem("panic_situation", situation);
+        document.getElementById('loading').classList.remove('active');
+        showScreen('screen-diagnosis');
+      } catch (renderErr) {
+        console.error('RENDER ERROR:', renderErr);
+        document.getElementById('loading').classList.remove('active');
+        document.getElementById('activate-btn').disabled = false;
+        showAppMessage('Render Error', 'Render error: ' + renderErr.message);
+      }
+    } catch (err) {
+      document.getElementById('loading').classList.remove('active');
+      document.getElementById('activate-btn').disabled = false;
+      showAppMessage('Error', 'Error: ' + err.message);
+    }
+  }
+
+  // ── RENDER DIAGNOSIS ──
+  function renderDiagnosis(data) {
+    const sev = data.severity;
+    const badge = document.getElementById('severity-badge');
+    const sevText = document.getElementById('diag-severity');
+    badge.className = `severity-badge ${sev}`;
+    sevText.className = `severity-text ${sev}`;
+    sevText.textContent = sev;
+
+    document.getElementById('diag-name').textContent = data.diagnosis;
+    document.getElementById('diag-threat').textContent = data.critical_threat;
+    document.getElementById("crisis-type").textContent = data.crisis_type || "General Emergency";
+
+    const prob = data.success_probability;
+    const probEl = document.getElementById('diag-prob');
+    probEl.textContent = prob + '%';
+    probEl.className = 'prob-big ' + (prob >= 60 ? 'high' : prob >= 35 ? 'medium' : 'low');
+    const bar = document.getElementById('diag-prob-bar');
+    setTimeout(() => { bar.style.width = prob + '%'; }, 100);
+    bar.style.background = prob >= 60 ? 'var(--green)' : prob >= 35 ? 'var(--amber)' : 'var(--red)';
+
+    const lbl = document.getElementById('prob-label');
+    lbl.textContent = prob >= 60 ? 'GOOD CHANCE — STAY FOCUSED' : prob >= 35 ? 'MODERATE CHANCE — PUSH HARD' : 'LOW CHANCE — IMMEDIATE ACTION REQUIRED';
+    document.getElementById("probability-reason").innerHTML =
+    (data.probability_reason || []).map(reason =>
+      `<div class="do-not-item">
+        <span class="do-not-x">•</span>${reason}
+      </div>`
+    ).join("");
+
+    const doNotEl = document.getElementById('do-not-list');
+    doNotEl.innerHTML = (data.do_not_list || []).map(item =>
+      `<div class="do-not-item"><span class="do-not-x">✕</span>${item}</div>`
+    ).join('');
+
+    const cardsEl = document.getElementById('task-cards');
+    cardsEl.innerHTML = (data.tasks || []).map((t, i) =>
+      `<div class="task-card">
+        <div class="task-card-num">TASK ${String(i+1).padStart(2,'0')}</div>
+        <div class="task-card-title">${t.title}</div>
+        <div class="task-card-meta">
+          <span class="task-tag time">⏱ ${t.duration_minutes}m</span>
+          <span class="task-tag slot">${t.start_time}</span>
+        </div>
+      </div>`
+    ).join('');
+
+    document.getElementById('recovery-tip').textContent = '"' + data.recovery_tip + '"';
+  }
+
+  // ── EDIT SITUATION ──
+  function editSituation() {
+  const input = document.getElementById("situation-input");
+
+  input.value = state.situation || localStorage.getItem("panic_situation") || "";
+  updateCharCount(input);
+
+  showScreen("screen-landing");
+  localStorage.setItem("panic_current_screen", "screen-landing");
+
+  setTimeout(() => {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, 100);
+}
+
+  // ── FOCUS MODE ──
+  function startFocusMode() {
+    if(state.reviewMode){
+      return;
+    }
+    buildPips();
+    state.currentTaskIndex = 0;
+    loadTask(0);
+    showScreen('screen-focus');
+    startCheckinInterval();
+  }
+
+  function buildPips() {
+    const el = document.getElementById('task-pips');
+    el.innerHTML = state.tasks.map((_, i) => `<div class="task-pip" id="pip-${i}"></div>`).join('');
+  }
+
+  function updatePips(index) {
+    state.tasks.forEach((_, i) => {
+      const pip = document.getElementById(`pip-${i}`);
+      if (!pip) return;
+      pip.className = 'task-pip ' + (i < index ? 'done' : i === index ? 'active' : '');
+    });
+  }
+
+  function loadTask(index) {
+    state.currentTaskIndex = index;
+    localStorage.setItem("panic_task_index", String(index));
+    localStorage.setItem("panic_completed", String(state.completedCount));
+    localStorage.setItem("panic_missed", String(state.missedCount));
+    localStorage.setItem("panic_current_screen", "screen-focus");
+    const task = state.tasks[index];
+    if (!task) { endSession(); return; }
+
+    document.getElementById('focus-task-num').textContent = `TASK ${index + 1} OF ${state.tasks.length}`;
+    document.getElementById('focus-task-title').textContent = task.title;
+    document.getElementById('checkin-task-name').textContent = task.title;
+    updatePips(index);
+
+    // update mission progress bar on diagnosis screen
+    const pct = Math.round((index / state.tasks.length) * 100);
+    document.getElementById('mission-pct').textContent = pct + '%';
+    document.getElementById('mission-bar').style.width = pct + '%';
+
+    clearInterval(state.timerInterval);
+    const duration = Number(task.duration_minutes || task.duration || 5);
+    state.secondsLeft = duration * 60;
+    state.totalSeconds = state.secondsLeft;
+    updateTimerDisplay();
+
+    state.timerInterval = setInterval(() => {
+      state.secondsLeft--;
+      updateTimerDisplay();
+      if (state.secondsLeft <= 0) { clearInterval(state.timerInterval); showCheckin(); }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const mins = Math.floor(state.secondsLeft / 60);
+    const secs = state.secondsLeft % 60;
+    const el = document.getElementById('giant-timer');
+    el.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    const ratio = state.secondsLeft / state.totalSeconds;
+    el.className = 'giant-timer ' + (ratio > 0.5 ? 'safe' : ratio > 0.2 ? 'warning' : '');
+    const fill = document.getElementById('timer-progress-fill');
+    fill.style.width = (ratio * 100) + '%';
+    fill.style.background = ratio > 0.5 ? 'var(--green)' : ratio > 0.2 ? 'var(--amber)' : 'var(--red)';
+  }
+
+  function startCheckinInterval() {
+    clearInterval(state.checkinInterval);
+    state.checkinInterval = setInterval(showCheckin, 20 * 60 * 1000);
+  }
+
+  // ── RATING ──
+  const focusMeanings = {
+  1: "😵 Easily distracted — AI may simplify the next step.",
+  2: "😕 Struggling — AI may reduce task pressure.",
+  3: "😐 Holding steady — current plan stays stable.",
+  4: "🙂 Focused — keep the current pace.",
+  5: "🔥 Locked in — maintain momentum."
+};
+
+document.querySelectorAll('.star').forEach(star => {
+  star.addEventListener('click', () => {
+    state.focusRating = parseInt(star.dataset.val);
+
+    document.querySelectorAll('.star').forEach((s, i) =>
+      s.classList.toggle('active', i < state.focusRating)
+    );
+
+    document.getElementById("focus-meaning").textContent =
+      focusMeanings[state.focusRating];
+  });
+});
+
+  function showCheckin() { document.getElementById('checkin-modal').classList.add('active'); }
+
+  async function handleCheckin(completed) {
+  document.getElementById('checkin-modal').classList.remove('active');
+
+  clearInterval(state.timerInterval);
+
+  if (completed) state.completedCount++;
+  else state.missedCount++;
+
+  state.currentTaskIndex++;
+
+  localStorage.setItem("panic_task_index", String(state.currentTaskIndex));
+  localStorage.setItem("panic_completed", String(state.completedCount));
+  localStorage.setItem("panic_missed", String(state.missedCount));
+  localStorage.setItem("panic_current_screen", "screen-focus");
+
+  if (state.currentTaskIndex >= state.tasks.length) {
+    localStorage.setItem("panic_current_screen", "screen-debrief");
+    endSession();
+    return;
+  }
+
+  loadTask(state.currentTaskIndex);
+  showScreen("screen-focus");
+}
+  function markDone() { clearInterval(state.timerInterval); handleCheckin(true); }
+
+  // ── MICRO TASKS ──
+  async function needHelp() {
+  const task = state.tasks[state.currentTaskIndex];
+
+  document.getElementById('micro-list').innerHTML = `
+    <li class="micro-item">
+      <div class="micro-title">Generating micro-task breakdown...</div>
+      <div class="micro-meta">AI is thinking</div>
+      <div class="micro-tip">This may take a few seconds.</div>
+    </li>
+  `;
+
+  document.getElementById('micro-modal').classList.add('active');
+
+  if (MOCK_MODE) {
+  const task = state.tasks[state.currentTaskIndex];
+  const title = task.title.toLowerCase();
+  const mins = task.duration_minutes;
+
+  let microTasks = [];
+
+  if (title.includes('slide') || title.includes('present')) {
+    microTasks = [
+      { title: 'Open blank slide and write title only', duration_minutes: Math.max(2, Math.round(mins * 0.1)), tip: 'Just the title. Nothing else. Start.' },
+      { title: 'Add 3 bullet points per slide — no design', duration_minutes: Math.max(3, Math.round(mins * 0.3)), tip: 'Content first, design never.' },
+      { title: 'Add one image per slide from Google', duration_minutes: Math.max(3, Math.round(mins * 0.25)), tip: 'One relevant image beats 10 words.' },
+      { title: 'Read each slide out loud once', duration_minutes: Math.max(2, Math.round(mins * 0.2)), tip: 'If it sounds weird spoken, fix it.' },
+      { title: 'Send or submit as-is', duration_minutes: Math.max(1, Math.round(mins * 0.1)), tip: 'Done beats perfect. Always.' },
+    ];
+  } else if (title.includes('study') || title.includes('read') || title.includes('topic') || title.includes('concept') || title.includes('chapter')) {
+    microTasks = [
+      { title: 'Skim headings and subheadings only', duration_minutes: Math.max(2, Math.round(mins * 0.1)), tip: 'Get the map before reading the territory.' },
+      { title: 'Read first and last paragraph of each section', duration_minutes: Math.max(3, Math.round(mins * 0.3)), tip: 'Most key info lives at the edges.' },
+      { title: 'Write 3 bullet points per topic from memory', duration_minutes: Math.max(3, Math.round(mins * 0.25)), tip: 'If you can write it, you know it.' },
+      { title: 'Re-read only what you couldn\'t recall', duration_minutes: Math.max(2, Math.round(mins * 0.2)), tip: 'Targeted revision beats re-reading everything.' },
+      { title: 'Say answers out loud like teaching someone', duration_minutes: Math.max(2, Math.round(mins * 0.1)), tip: 'Teaching is the best test of knowledge.' },
+    ];
+  } else if (title.includes('email') || title.includes('message') || title.includes('reply') || title.includes('send')) {
+    microTasks = [
+      { title: 'Open draft and write subject line only', duration_minutes: Math.max(1, Math.round(mins * 0.1)), tip: 'A clear subject line forces clear thinking.' },
+      { title: 'Write 3 lines — what happened, what you need, next step', duration_minutes: Math.max(2, Math.round(mins * 0.3)), tip: 'Short emails get read. Long ones get ignored.' },
+      { title: 'Remove any unnecessary words or apologies', duration_minutes: Math.max(1, Math.round(mins * 0.2)), tip: 'Confident and concise beats long and sorry.' },
+      { title: 'Read once and hit send', duration_minutes: Math.max(1, Math.round(mins * 0.1)), tip: 'Sent is better than perfect.' },
+    ];
+  } else if (title.includes('meeting') || title.includes('call') || title.includes('interview') || title.includes('rehearse')) {
+    microTasks = [
+      { title: 'Write 3 key points you must cover', duration_minutes: Math.max(2, Math.round(mins * 0.15)), tip: 'Know your 3 points and you\'re prepared.' },
+      { title: 'Anticipate 2 hard questions and answer them out loud', duration_minutes: Math.max(3, Math.round(mins * 0.3)), tip: 'Say it out loud — thinking it is not enough.' },
+      { title: 'Check your setup — mic, camera, notes ready', duration_minutes: Math.max(2, Math.round(mins * 0.2)), tip: 'Technical issues tank good performances.' },
+      { title: 'Do one full mock run from start to finish', duration_minutes: Math.max(2, Math.round(mins * 0.25)), tip: 'One full rehearsal beats five partial ones.' },
+    ];
+  } else {
+    microTasks = [
+      { title: 'Write down exactly what done looks like for this task', duration_minutes: Math.max(2, Math.round(mins * 0.1)), tip: 'You can\'t finish what you haven\'t defined.' },
+      { title: 'Do the single hardest part first', duration_minutes: Math.max(3, Math.round(mins * 0.35)), tip: 'Hard part done = everything else is easy.' },
+      { title: 'Complete the remaining easy parts', duration_minutes: Math.max(3, Math.round(mins * 0.3)), tip: 'Momentum is real — keep going.' },
+      { title: 'Review once and mark as done', duration_minutes: Math.max(1, Math.round(mins * 0.1)), tip: 'One review pass only. Ship it.' },
+    ];
+  }
+
+  document.getElementById('micro-list').innerHTML = microTasks.map(t =>
+    `<li class="micro-item">
+      <div class="micro-title">${t.title}</div>
+      <div class="micro-meta">⏱ ${t.duration_minutes} min</div>
+      <div class="micro-tip">${t.tip}</div>
+    </li>`
+  ).join('');
+  document.getElementById('micro-modal').classList.add('active');
+  return;
+}
+
+  try {
+    const res = await fetch(`${API}/explode/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+      task_title: task.title,minutes_available: task.duration_minutes,focus_rating: state.focusRating})
+    });
+    const data = await res.json();
+    console.log("EXPLODE RESPONSE:", data);
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error || "Explode API failed");
+    }
+
+    const microTasks = data.micro_tasks || [];
+
+const focusText = {
+  1: "😵 Easily Distracted",
+  2: "😕 Struggling",
+  3: "😐 Holding Steady",
+  4: "🙂 Focused",
+  5: "🔥 Locked In"
+};
+
+document.getElementById('micro-list').innerHTML = `
+  <li class="micro-item">
+    <div class="micro-title">🧠 AI adjusted this plan for ${focusText[state.focusRating]}</div>
+    <div class="micro-tip">Your focus level changes how the AI breaks this task into steps.</div>
+  </li>
+` + microTasks.map(t =>
+  `<li class="micro-item">
+    <div class="micro-title">${t.title}</div>
+    <div class="micro-meta">⏱ ${t.duration_minutes} min</div>
+    <div class="micro-tip">${t.tip}</div>
+  </li>`
+).join('');
+    document.getElementById('micro-modal').classList.add('active');
+  } catch (e) { alert('Could not break down task. Try again.'); }
+}
+
+  function handleNeedHelp() { document.getElementById('checkin-modal').classList.remove('active'); needHelp(); }
+  function closeMicro() { document.getElementById('micro-modal').classList.remove('active'); }
+  
+  // ── REVIEW COMPLETED PLAN ──
+  function reviewCompletedPlan() {
+
+    state.reviewMode = true;
+
+    renderDiagnosis(JSON.parse(localStorage.getItem("panic_last_data")));
+
+    document.getElementById("mission-pct").textContent = "100%";
+    document.getElementById("mission-bar").style.width = "100%";
+
+    const btn = document.getElementById("start-focus-btn");
+
+    btn.textContent = "✓ MISSION COMPLETED • REVIEW ONLY";
+    btn.disabled = true;
+
+    btn.style.background = "rgba(0,255,140,.08)";
+    btn.style.border = "1px solid #00ff8c";
+    btn.style.color = "#00ff8c";
+    btn.style.cursor = "default";
+    btn.style.boxShadow = "none";
+
+    showScreen("screen-diagnosis");
+}
+  // ── END SESSION ──
+  function endSession() {
+    clearInterval(state.timerInterval);
+    clearInterval(state.checkinInterval);
+    const total = state.completedCount + state.missedCount;
+    const done = state.completedCount;
+    if (done > 0) { state.streak++; 
+      sessionStorage.setItem('panicStreak', state.streak);
+    }
+
+    document.getElementById('stat-done').textContent = done;
+    document.getElementById('stat-missed').textContent = state.missedCount;
+    document.getElementById('stat-prob').textContent = state.successProbability + '%';
+
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('session-pct-label').textContent = `${done} / ${total}`;
+    setTimeout(() => { document.getElementById('session-bar').style.width = pct + '%'; }, 300);
+
+    document.getElementById('streak-text').textContent =
+      `You completed ${done} of ${total} tasks under pressure. Current streak: ${state.streak} sessions 🔥`;
+
+    const rate = total > 0 ? done / total : 0;
+    document.getElementById('debrief-title').innerHTML =
+      rate >= 0.8 ? 'Mission<br/>Complete.' : rate >= 0.5 ? 'Mostly<br/>There.' : 'Tough<br/>Session.';
+
+    document.getElementById('debrief-insight').textContent =
+      rate >= 0.8
+        ? 'Exceptional under pressure. You execute best when given a clear minute-by-minute plan. Keep using structured triage.'
+        : rate >= 0.5
+        ? 'Solid start but momentum dipped mid-session. Try shorter task blocks (10 min) for better focus next time.'
+        : 'High-stress situations reduced your output today. Check your mood before diving in — energy-matched tasks help significantly.';
+
+    localStorage.setItem("panic_current_screen", "screen-debrief");
+    const debriefData = {
+    completedCount: state.completedCount,
+    missedCount: state.missedCount,
+    successProbability: state.successProbability,
+    streak: state.streak,
+    tasks: state.tasks
+};
+
+  localStorage.setItem("panic_debrief", JSON.stringify(debriefData));
+    showScreen('screen-debrief');
+  }
+
+function showAppMessage(title, message) {
+  document.getElementById("app-message-title").textContent = title;
+  document.getElementById("app-message-text").textContent = message;
+  document.getElementById("app-message-modal").classList.add("active");
+}
+
+function closeAppMessage() {
+  document.getElementById("app-message-modal").classList.remove("active");
+}
+  // ── RECOVERY ──
+  function showRecovery() {
+  document.getElementById("damage-input").value = "";
+  document.getElementById("damage-input-modal").classList.add("active");
+}
+
+function closeDamageInput() {
+  document.getElementById("damage-input-modal").classList.remove("active");
+}
+
+async function submitDamageInput() {
+  
+  const missed = document.getElementById("damage-input").value.trim();
+
+  if (!missed) {
+    showAppMessage("Missing Info", "Tell me what deadline you missed first.");
+    return;
+  }
+
+  document.getElementById("damage-input-modal").classList.remove("active");
+
+  // ── SESSION VALIDATION ──
+  const originalSituation = state.situation.toLowerCase();
+  const missedLower = missed.toLowerCase();
+
+  const keywords = {
+    presentation: ['presentation', 'slides', 'pitch', 'deck'],
+    exam: ['exam', 'test', 'quiz', 'study', 'subject'],
+    interview: ['interview', 'job', 'hr', 'hiring'],
+    client: ['client', 'customer', 'meeting', 'call'],
+    assignment: ['assignment', 'submission', 'project', 'deadline', 'homework'],
+    meeting: ['meeting', 'standup', 'sync', 'call'],
+  };
+
+  // Detect what the original session was about
+  let sessionType = null;
+  for (const [type, words] of Object.entries(keywords)) {
+    if (words.some(w => originalSituation.includes(w))) {
+      sessionType = type; break;
+    }
+  }
+
+  // Detect what the user typed in damage control
+  let inputType = null;
+  for (const [type, words] of Object.entries(keywords)) {
+    if (words.some(w => missedLower.includes(w))) {
+      inputType = type; break;
+    }
+  }
+
+  // Validate — must match session context
+  if (inputType && sessionType && inputType !== sessionType) {
+    showAppMessage(
+      "⚠️ Wrong Emergency",
+      `bruh that's not what we were even working on 💀\n\nThis rescue mission is for a ${sessionType}, not "${missed}". 😭\n\nKeep the lore consistent 😂\nTell me the ${sessionType} deadline you actually missed and I'll build the damage-control plan. 🚀`
+    );
+    return;
+  }
+  document.getElementById('recovery-content').innerHTML = `
+  <div class="rep-recovery">
+    <div class="rep-num">...</div>
+    <div class="rep-label">GENERATING DAMAGE CONTROL PLAN</div>
+  </div>
+  <div class="silver-lining">AI is preparing recovery steps. Please wait...</div>
+`;
+  document.getElementById('recovery-modal').classList.add('active');
+
+  if (MOCK_MODE) {
+    const m = missedLower;
+
+    // Dynamic recovery % 
+    const recoveryPct = m.includes('interview') ? 55
+      : m.includes('client') ? 60
+      : m.includes('presentation') ? 58
+      : m.includes('assignment') || m.includes('submission') ? 80
+      : m.includes('meeting') ? 72
+      : m.includes('project') ? 65
+      : Math.floor(Math.random() * 25) + 55;
+
+    // Dynamic harsh truth
+    const harshTruth = m.includes('interview')
+      ? `Missing an interview is serious — most companies won't reschedule. Act within 30 minutes or the door closes.`
+      : m.includes('client')
+      ? `Clients remember who wastes their time. Your response in the next 10 minutes defines your professional reputation.`
+      : m.includes('assignment')
+      ? `Most professors accept late work with a genuine explanation. The longer you wait, the worse it looks.`
+      : m.includes('presentation')
+      ? `No-showing a presentation is hard to forget. A proactive apology now is your only real option.`
+      : m.includes('meeting')
+      ? `Missing a meeting without notice signals disrespect. Own it immediately and don't let it happen again.`
+      : `Missing a ${missed} damages trust. Your next action in the next 10 minutes determines how much you recover.`;
+
+    // Dynamic silver lining
+    const silverLining = m.includes('interview')
+      ? `Some interviewers respect honesty. A genuine apology email sent right now has recovered careers before.`
+      : m.includes('client')
+      ? `Clients who receive a fast, honest response often become your most loyal ones. This is recoverable.`
+      : m.includes('assignment')
+      ? `A late assignment with a real explanation beats a no-show every time. Most professors are human.`
+      : m.includes('presentation')
+      ? `Reaching out proactively shows professionalism. Most people will give you another chance if you own it fast.`
+      : `Most people respect honesty and a quick response far more than silence. You still have time to turn this around.`;
+
+    // Dynamic steps based on missed input
+    let steps = [];
+
+    if (m.includes('interview')) {
+      steps = [
+        { step: 1, action: 'Email the recruiter within the next 10 minutes', template: `Hi [Name], I sincerely apologize for missing our interview today. I take full responsibility. Would it be possible to reschedule at your earliest convenience? I remain very interested in the role.` },
+        { step: 2, action: 'Connect on LinkedIn with a short note', template: `Hi [Name], I sent an email regarding today's missed interview. I truly apologize and hope we can reconnect.` },
+        { step: 3, action: 'Prepare extra hard for any reschedule — no second chances at this', template: null },
+      ];
+    } else if (m.includes('client') || m.includes('call')) {
+      steps = [
+        { step: 1, action: 'Call or message the client immediately — don\'t hide', template: `Hi [Client], I sincerely apologize for missing our call today. This was entirely my fault. Can we reschedule in the next hour or at your next available time?` },
+        { step: 2, action: 'Send whatever work you have completed right now', template: `Please find attached the work completed so far. The remaining deliverables will be with you by [time].` },
+        { step: 3, action: 'Propose a new confirmed meeting time with a calendar invite', template: null },
+        { step: 4, action: 'Deliver on the new deadline — no more misses', template: null },
+      ];
+    } else if (m.includes('presentation')) {
+      steps = [
+        { step: 1, action: 'Email the audience or organizer immediately', template: `Hi [Name], I sincerely apologize for missing the presentation today. I take full responsibility and would like to present at the next available opportunity.` },
+        { step: 2, action: 'Share your slides or a recorded walkthrough as a backup', template: `In the meantime, please find my presentation slides attached. I am happy to walk you through them on a quick call.` },
+        { step: 3, action: 'Offer a 10-minute live walkthrough at their convenience', template: null },
+      ];
+    } else if (m.includes('assignment') || m.includes('submission') || m.includes('homework')) {
+      steps = [
+        { step: 1, action: 'Email your professor or teacher right now', template: `Dear Professor [Name], I am writing to sincerely apologize for missing today's submission deadline. I would be grateful if you could consider accepting a late submission. I will have it ready within [X hours].` },
+        { step: 2, action: 'Submit whatever you have completed — partial is better than nothing', template: `Please find my partial submission attached. I will send the completed version by [time].` },
+        { step: 3, action: 'Complete and resubmit within 24 hours maximum', template: null },
+      ];
+    } else if (m.includes('meeting') || m.includes('standup') || m.includes('sync')) {
+      steps = [
+        { step: 1, action: 'Message the team or organizer immediately', template: `Hey team, I sincerely apologize for missing today's meeting. Can someone share the notes? I will catch up immediately and make sure this doesn't happen again.` },
+        { step: 2, action: 'Ask for a 5-minute catch-up with whoever ran the meeting', template: `[Name], do you have 5 minutes for a quick catch-up? I want to make sure I'm aligned on what was discussed.` },
+        { step: 3, action: 'Set a recurring alarm so this never happens again', template: null },
+      ];
+    } else {
+      steps = [
+        { step: 1, action: 'Send an honest apology message immediately', template: `Hi, I sincerely apologize for missing the ${missed}. I take full responsibility and am working to resolve this right now.` },
+        { step: 2, action: 'Deliver whatever partial work you have completed', template: `Here is what I have completed so far. I will send the remaining parts within [X hours].` },
+        { step: 3, action: 'Propose a new realistic deadline and stick to it', template: null },
+      ];
+    }
+
+    document.getElementById('recovery-content').innerHTML = `
+      <div class="rep-recovery">
+        <div class="rep-num">${recoveryPct}%</div>
+        <div class="rep-label">ESTIMATED REPUTATION RECOVERY</div>
+      </div>
+      <ol class="recovery-steps">
+        ${steps.map(s => `
+          <li class="recovery-step">
+            <div class="step-num">STEP ${s.step}</div>
+            <div class="step-action">${s.action}</div>
+            ${s.template ? `<div class="step-template">"${s.template}"</div>` : ''}
+          </li>`).join('')}
+      </ol>
+      <div class="harsh-truth">⚡ ${harshTruth}</div>
+      <div class="silver-lining">✦ ${silverLining}</div>`;
+    document.getElementById('recovery-modal').classList.add('active');
+    return;
+  }
+
+  // Real API call (when Gemini is connected)
+  try {
+    const res = await fetch(`${API}/recovery/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: state.sessionId, missed_deadline: missed })
+    });
+    const data = await res.json();
+    console.log("RECOVERY RESPONSE:", data);
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error || "Recovery API failed");
+    }
+
+    document.getElementById('recovery-content').innerHTML = `
+      <div class="rep-recovery">
+        <div class="rep-num">${data.reputation_recovery_percent}%</div>
+        <div class="rep-label">ESTIMATED REPUTATION RECOVERY</div>
+      </div>
+      <ol class="recovery-steps">
+        ${data.damage_control_steps.map(s => `
+          <li class="recovery-step">
+            <div class="step-num">STEP ${s.step}</div>
+            <div class="step-action">${s.action}</div>
+            ${s.template ? `<div class="step-template">"${s.template}"</div>` : ''}
+          </li>`).join('')}
+      </ol>
+      <div class="harsh-truth">⚡ ${data.harsh_truth}</div>
+      <div class="silver-lining">✦ ${data.silver_lining}</div>`;
+    document.getElementById('recovery-modal').classList.add('active');
+  } catch (e) {
+  showAppMessage("Recovery Failed", "Could not generate recovery plan. Try again.");}
+}
+
+  // ── NEW SESSION ──
+  function newSession() {
+    state.reviewMode = false;
+    const btn = document.getElementById("start-focus-btn");
+    btn.disabled = false;
+    btn.textContent = "⚡ ENTER FOCUS MODE — BEGIN RESCUE MISSION →";
+    btn.removeAttribute("style");
+
+    clearInterval(state.timerInterval); clearInterval(state.checkinInterval);
+    const streak = state.streak;
+    state = { mood:'', situation:'', sessionId:null, tasks:[], currentTaskIndex:0, timerInterval:null, checkinInterval:null, secondsLeft:0, totalSeconds:0, focusRating:3, completedCount:0, missedCount:0, successProbability:0, streak };
+    document.getElementById('situation-input').value = '';
+    document.getElementById('char-count').textContent = '0 / 500';
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector(".start-mission-btn").style.display = "block";
+    document.getElementById('activate-btn').disabled = false;
+    localStorage.removeItem('panic_current_screen');
+    localStorage.removeItem('panic_last_data');
+    localStorage.removeItem("panic_task_index");
+    localStorage.removeItem("panic_completed");
+    localStorage.removeItem("panic_missed");
+    localStorage.removeItem("panic_current_screen");
+    localStorage.removeItem("panic_last_data");
+    localStorage.removeItem("panic_situation");
+    localStorage.removeItem("panic_debrief");
+    showScreen('screen-landing');
+  }
+  
+ window.addEventListener("DOMContentLoaded", () => {
+ // Fresh launch = always start a new emergency
+  if (!sessionStorage.getItem("panic_session_started")) {
+
+        localStorage.removeItem("panic_current_screen");
+        localStorage.removeItem("panic_last_data");
+        localStorage.removeItem("panic_situation");
+        localStorage.removeItem("panic_task_index");
+        localStorage.removeItem("panic_completed");
+        localStorage.removeItem("panic_missed");
+        localStorage.removeItem("panic_debrief");
+
+        sessionStorage.setItem("panic_session_started", "true");
+    }
+  const savedScreen = localStorage.getItem("panic_current_screen");
+  const savedData = localStorage.getItem("panic_last_data");
+
+  if (!savedData) return;
+
+  const data = JSON.parse(savedData);
+
+  state.sessionId = data.session_id;
+  state.tasks = data.tasks || [];
+  state.successProbability = data.success_probability || 0;
+  state.situation = localStorage.getItem("panic_situation") || "";
+
+  renderDiagnosis(data);
+
+  if (savedScreen === "screen-landing") {
+  const input = document.getElementById("situation-input");
+  input.value = localStorage.getItem("panic_situation") || "";
+  updateCharCount(input);
+  showScreen("screen-landing");
+  return;
+}
+
+  if (savedScreen === "screen-debrief") {
+
+    const debrief = JSON.parse(localStorage.getItem("panic_debrief"));
+
+    if (debrief) {
+
+        state.completedCount = debrief.completedCount;
+        state.missedCount = debrief.missedCount;
+        state.successProbability = debrief.successProbability;
+        state.streak = debrief.streak;
+        state.tasks = debrief.tasks;
+
+        endSession();
+
+        return;
+    }
+} else if (savedScreen === "screen-focus") {
+    state.currentTaskIndex = Number(localStorage.getItem("panic_task_index") || "0");
+    state.completedCount = Number(localStorage.getItem("panic_completed") || "0");
+    state.missedCount = Number(localStorage.getItem("panic_missed") || "0");
+
+  buildPips();
+  loadTask(state.currentTaskIndex);
+  showScreen("screen-focus");
+} else {
+    showScreen("screen-diagnosis");
+  }
+});
+</script>
+</body>
+</html>
