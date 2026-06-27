@@ -8,6 +8,7 @@ GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.
 
 def call_gemini(messages):
     import json
+
     payload = {
         "contents": messages,
         "generationConfig": {
@@ -15,21 +16,27 @@ def call_gemini(messages):
             "maxOutputTokens": 2000,
         }
     }
-    
+
     response = requests.post(
         GEMINI_URL,
         headers={"Content-Type": "application/json"},
         json=payload
     )
-    
+
     result = response.json()
     print("FULL GEMINI RESPONSE:", json.dumps(result, indent=2))
-    # Gemini thinking models return multiple parts — find the text part
-    parts = result['candidates'][0]['content']['parts']
+
+    if "error" in result:
+        message = result["error"].get("message", "Gemini API error")
+        raise Exception(message)
+
+    parts = result.get("candidates", [])[0].get("content", {}).get("parts", [])
+
     for part in parts:
-      if 'text' in part:
-        return part['text']
-      raise Exception("No text found in Gemini response") 
+        if "text" in part:
+            return part["text"]
+
+    raise Exception("No text found in Gemini response")
 
 
 def triage_situation(situation, mood):
