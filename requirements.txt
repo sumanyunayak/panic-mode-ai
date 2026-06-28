@@ -17,7 +17,6 @@ httpx==0.28.1
 idna==3.18
 mysql==0.0.3
 mysql-connector-python==8.2.0
-mysqlclient==2.2.1
 protobuf==4.21.12
 pyasn1==0.6.3
 pyasn1_modules==0.4.2
