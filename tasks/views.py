@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from django.shortcuts import render
 from .models import PanicSession, Task
 from .gemini_service import (
     triage_situation,
@@ -132,3 +133,6 @@ def recovery(request):
         
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def home(request):
+    return render(request, "index.html")

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PANIC MODE | AI Crisis Assistant</title>
 
-  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="icon" type="image/png" href="{% static 'assets/favicon.png.png' %}">
 
   <meta name="theme-color" content="#ff1a1a">
 
@@ -954,8 +955,8 @@
 <script>
   // Prevent any accidental form submissions
   document.addEventListener('submit', e => e.preventDefault());
-  const API = 'https://panic-mode-backend-937594151387.asia-south1.run.app/api';
-  // const API = 'http://127.0.0.1:8000/api';
+  // const API = 'https://panic-mode-backend-937594151387.asia-south1.run.app/api';
+  const API = 'http://127.0.0.1:8000/api';
 
 const MOCK_MODE = false;
 let loadingMessageInterval = null;

@@ -1,43 +1,30 @@
-import requests
 import os
 from dotenv import load_dotenv
+from google import genai
 
 load_dotenv()
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={GEMINI_API_KEY}"
+
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
+LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+
+client = genai.Client(
+    vertexai=True,
+    project=PROJECT_ID,
+    location=LOCATION
+)
 
 def call_gemini(messages):
-    import json
+    prompt = messages[-1]["parts"][0]["text"]
 
-    payload = {
-        "contents": messages,
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 2000,
-        }
-    }
-
-    response = requests.post(
-        GEMINI_URL,
-        headers={"Content-Type": "application/json"},
-        json=payload
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
     )
 
-    result = response.json()
-    print("FULL GEMINI RESPONSE:", json.dumps(result, indent=2))
+    if not response.text:
+        raise Exception("No text returned from Vertex AI Gemini")
 
-    if "error" in result:
-        message = result["error"].get("message", "Gemini API error")
-        raise Exception(message)
-
-    parts = result.get("candidates", [])[0].get("content", {}).get("parts", [])
-
-    for part in parts:
-        if "text" in part:
-            return part["text"]
-
-    raise Exception("No text found in Gemini response")
-
+    return response.text
 
 def triage_situation(situation, mood):
     prompt = f"""
