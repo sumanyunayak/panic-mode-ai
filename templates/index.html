@@ -595,7 +595,7 @@
 <!-- CHECK-IN MODAL -->
 <div class="modal-overlay" id="checkin-modal">
   <div class="modal-box">
-    <div class="modal-title">⏱ 20-MIN CHECK-IN</div>
+    <div class="modal-title" id="checkin-modal-title">⏱ AI CHECK-IN</div>
     <div class="modal-task" id="checkin-task-name">Task name</div>
     <div class="rating-label">CURRENT FOCUS</div>
     <div class="silver-lining" id="focus-meaning" style="margin-bottom:12px;">
@@ -864,8 +864,8 @@
 
 <!-- DEMO HINT — visible to judges -->
 <div style="margin-top: 20px; padding: 12px 16px; border: 1px dashed #333; border-radius: 4px; text-align: center;">
-  <div style="font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-bottom: 8px;">
-  💡 EVERY 20 MINS, AI ASKS IF YOU'RE ON TRACK & REPLANS IF NEEDED:
+  <div id="checkin-hint" style="font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-bottom: 8px;">
+  💡 AI CHECK-IN TRIGGERS AUTOMATICALLY AFTER 50% OF CURRENT TASK TIME
 </div>
 <button type="button" class="focus-btn checkin-btn" onclick="showCheckin()" style="width:100%; font-size:10px;">
   👁 SEE HOW AI CHECK-IN WORKS →
@@ -1177,6 +1177,7 @@ function generateMockTriage(situation, mood) {
     if (!situation) { showAppMessage('Missing Situation', 'Describe your situation first!'); return; }
     if (!state.mood) { showAppMessage('Missing Mood', 'Select your current mood!'); return; }
     state.situation = situation;
+    resetMissionStateForNewPrompt();
     localStorage.setItem("panic_situation", situation);
     document.getElementById('loading').classList.add('active');
     startLoadingMessages(diagnosisMessages);
@@ -1281,26 +1282,51 @@ function generateMockTriage(situation, mood) {
     ).join('');
 
     const cardsEl = document.getElementById('task-cards');
-    cardsEl.innerHTML = (data.tasks || []).map((t, i) =>
-      `<div class="task-card">
-        <div class="task-card-num">TASK ${String(i+1).padStart(2,'0')}</div>
-        <div class="task-card-title">${t.title}</div>
-        <div class="task-card-meta">
-          <span class="task-tag time">⏱ ${t.duration_minutes}m</span>
-          <span class="task-tag slot">${t.start_time}</span>
-        </div>
-      </div>`
-    ).join('');
+
+let runningMinutes = 0;
+const now = new Date();
+
+cardsEl.innerHTML = (data.tasks || []).map((t, i) => {
+  const taskStart = new Date(now.getTime() + runningMinutes * 60000);
+
+  const displayTime = taskStart.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  runningMinutes += Number(t.duration_minutes || 0);
+
+  return `
+    <div class="task-card">
+      <div class="task-card-num">TASK ${String(i+1).padStart(2,'0')}</div>
+      <div class="task-card-title">${t.title}</div>
+      <div class="task-card-meta">
+        <span class="task-tag time">⏱ ${t.duration_minutes}m</span>
+        <span class="task-tag slot">${i === 0 ? 'NOW' : displayTime}</span>
+      </div>
+    </div>
+  `;
+}).join('');
 
     document.getElementById('recovery-tip').textContent = '"' + data.recovery_tip + '"';
   }
 
   // ── EDIT SITUATION ──
   function editSituation() {
+  resetMissionStateForNewPrompt();
+  
   const input = document.getElementById("situation-input");
 
   input.value = state.situation || localStorage.getItem("panic_situation") || "";
   updateCharCount(input);
+
+  const btn = document.getElementById("activate-btn");
+  btn.disabled = false;
+  btn.style.pointerEvents = "auto";
+  btn.innerHTML = "🚨 ACTIVATE PANIC MODE";
+
+  document.getElementById("loading").classList.remove("active");
+  stopLoadingMessages();
 
   showScreen("screen-landing");
   localStorage.setItem("panic_current_screen", "screen-landing");
@@ -1313,15 +1339,17 @@ function generateMockTriage(situation, mood) {
 
   // ── FOCUS MODE ──
   function startFocusMode() {
-    if(state.reviewMode){
-      return;
-    }
-    buildPips();
-    state.currentTaskIndex = 0;
-    loadTask(0);
-    showScreen('screen-focus');
-    startCheckinInterval();
-  }
+  if (state.reviewMode) return;
+
+  buildPips();
+
+  const savedIndex = Number(localStorage.getItem("panic_task_index") || state.currentTaskIndex || "0");
+  state.currentTaskIndex = savedIndex;
+
+  loadTask(state.currentTaskIndex, false);
+  showScreen('screen-focus');
+  startCheckinInterval();
+}
 
   function buildPips() {
     const el = document.getElementById('task-pips');
@@ -1336,37 +1364,71 @@ function generateMockTriage(situation, mood) {
     });
   }
 
-  function loadTask(index) {
-    state.currentTaskIndex = index;
-    localStorage.setItem("panic_task_index", String(index));
-    localStorage.setItem("panic_completed", String(state.completedCount));
-    localStorage.setItem("panic_missed", String(state.missedCount));
-    localStorage.setItem("panic_current_screen", "screen-focus");
-    const task = state.tasks[index];
-    if (!task) { endSession(); return; }
+  function loadTask(index, resetTimer = false) {
+  state.currentTaskIndex = index;
 
-    document.getElementById('focus-task-num').textContent = `TASK ${index + 1} OF ${state.tasks.length}`;
-    document.getElementById('focus-task-title').textContent = task.title;
-    document.getElementById('checkin-task-name').textContent = task.title;
-    updatePips(index);
+  localStorage.setItem("panic_task_index", String(index));
+  localStorage.setItem("panic_completed", String(state.completedCount));
+  localStorage.setItem("panic_missed", String(state.missedCount));
+  localStorage.setItem("panic_current_screen", "screen-focus");
 
-    // update mission progress bar on diagnosis screen
-    const pct = Math.round((index / state.tasks.length) * 100);
-    document.getElementById('mission-pct').textContent = pct + '%';
-    document.getElementById('mission-bar').style.width = pct + '%';
+  const task = state.tasks[index];
+  if (!task) { endSession(); return; }
 
-    clearInterval(state.timerInterval);
-    const duration = Number(task.duration_minutes || task.duration || 5);
-    state.secondsLeft = duration * 60;
-    state.totalSeconds = state.secondsLeft;
+  document.getElementById('focus-task-num').textContent = `TASK ${index + 1} OF ${state.tasks.length}`;
+  document.getElementById('focus-task-title').textContent = task.title;
+  document.getElementById('checkin-task-name').textContent = task.title;
+  updatePips(index);
+
+  const pct = Math.round((index / state.tasks.length) * 100);
+  document.getElementById('mission-pct').textContent = pct + '%';
+  document.getElementById('mission-bar').style.width = pct + '%';
+
+  clearInterval(state.timerInterval);
+  const duration = Number(task.duration_minutes || task.duration || 5);
+  const checkinMinutes = Math.max(1, Math.ceil(duration / 2));
+
+const hint = document.getElementById("checkin-hint");
+if (hint) {
+  hint.textContent =
+    `💡 FOR THIS ${duration}-MIN TASK, AI CHECK-IN WILL APPEAR AFTER ${checkinMinutes} MINS `;
+}
+
+const modalTitle = document.getElementById("checkin-modal-title");
+
+if (modalTitle) {
+    modalTitle.innerHTML =
+        `⏱ MID-TASK AI CHECK-IN (${checkinMinutes} MIN${checkinMinutes > 1 ? "S" : ""} completed · Time to reassess)`;
+}
+
+localStorage.setItem("panic_checkin_minutes", String(checkinMinutes));
+  const totalSeconds = duration * 60;
+
+  if (resetTimer || !localStorage.getItem("panic_task_started_at")) {
+    localStorage.setItem("panic_task_started_at", String(Date.now()));
+    localStorage.setItem("panic_task_duration", String(totalSeconds));
+  }
+
+
+  function tick() {
+    const startedAt = Number(localStorage.getItem("panic_task_started_at"));
+    const total = Number(localStorage.getItem("panic_task_duration"));
+
+    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+    state.totalSeconds = total;
+    state.secondsLeft = Math.max(total - elapsed, 0);
+
     updateTimerDisplay();
 
-    state.timerInterval = setInterval(() => {
-      state.secondsLeft--;
-      updateTimerDisplay();
-      if (state.secondsLeft <= 0) { clearInterval(state.timerInterval); showCheckin(); }
-    }, 1000);
+    if (state.secondsLeft <= 0) {
+      clearInterval(state.timerInterval);
+      showCheckin();
+    }
   }
+
+  tick();
+  state.timerInterval = setInterval(tick, 1000);
+}
 
   function updateTimerDisplay() {
     const mins = Math.floor(state.secondsLeft / 60);
@@ -1381,9 +1443,12 @@ function generateMockTriage(situation, mood) {
   }
 
   function startCheckinInterval() {
-    clearInterval(state.checkinInterval);
-    state.checkinInterval = setInterval(showCheckin, 20 * 60 * 1000);
-  }
+  clearInterval(state.checkinInterval);
+
+  const checkinMinutes = Number(localStorage.getItem("panic_checkin_minutes") || "10");
+
+  state.checkinInterval = setInterval(showCheckin, checkinMinutes * 60 * 1000);
+}
 
   // ── RATING ──
   const focusMeanings = {
@@ -1430,7 +1495,9 @@ document.querySelectorAll('.star').forEach(star => {
     return;
   }
 
-  loadTask(state.currentTaskIndex);
+  localStorage.removeItem("panic_task_started_at");
+  localStorage.removeItem("panic_task_duration");
+  loadTask(state.currentTaskIndex, true);
   showScreen("screen-focus");
 }
   function markDone() { clearInterval(state.timerInterval); handleCheckin(true); }
@@ -1823,6 +1890,33 @@ async function submitDamageInput() {
   } catch (e) {
   showAppMessage("Recovery Failed", "Could not generate recovery plan. Try again.");}
 }
+// ── RESET STATE FOR NEW PROMPT ──
+function resetMissionStateForNewPrompt() {
+  clearInterval(state.timerInterval);
+  clearInterval(state.checkinInterval);
+
+  state.reviewMode = false;
+  state.currentTaskIndex = 0;
+  state.completedCount = 0;
+  state.missedCount = 0;
+  state.secondsLeft = 0;
+  state.totalSeconds = 0;
+
+  localStorage.removeItem("panic_task_index");
+  localStorage.removeItem("panic_completed");
+  localStorage.removeItem("panic_missed");
+  localStorage.removeItem("panic_debrief");
+  localStorage.removeItem("panic_task_started_at");
+  localStorage.removeItem("panic_task_duration");
+
+  const btn = document.getElementById("start-focus-btn");
+  btn.disabled = false;
+  btn.textContent = "⚡ ENTER FOCUS MODE — BEGIN RESCUE MISSION →";
+  btn.removeAttribute("style");
+
+  document.getElementById("mission-pct").textContent = "0%";
+  document.getElementById("mission-bar").style.width = "0%";
+}
 
   // ── NEW SESSION ──
   function newSession() {
@@ -1849,6 +1943,8 @@ async function submitDamageInput() {
     localStorage.removeItem("panic_last_data");
     localStorage.removeItem("panic_situation");
     localStorage.removeItem("panic_debrief");
+    localStorage.removeItem("panic_task_started_at");
+    localStorage.removeItem("panic_task_duration");
     showScreen('screen-landing');
   }
   
@@ -1910,8 +2006,9 @@ async function submitDamageInput() {
     state.missedCount = Number(localStorage.getItem("panic_missed") || "0");
 
   buildPips();
-  loadTask(state.currentTaskIndex);
+  loadTask(state.currentTaskIndex, false);
   showScreen("screen-focus");
+  startCheckinInterval();
 } else {
     showScreen("screen-diagnosis");
   }
